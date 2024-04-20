@@ -12,9 +12,19 @@
  Target Server Version : 140001
  File Encoding         : 65001
 
- Date: 18/04/2024 15:02:30
+ Date: 20/04/2024 19:52:06
 */
 
+
+-- ----------------------------
+-- Type structure for jenkel_enum
+-- ----------------------------
+DROP TYPE IF EXISTS "public"."jenkel_enum";
+CREATE TYPE "public"."jenkel_enum" AS ENUM (
+  'Laki-laki',
+  'Perempuan'
+);
+ALTER TYPE "public"."jenkel_enum" OWNER TO "postgres";
 
 -- ----------------------------
 -- Type structure for roles_enum
@@ -30,20 +40,54 @@ CREATE TYPE "public"."roles_enum" AS ENUM (
 ALTER TYPE "public"."roles_enum" OWNER TO "postgres";
 
 -- ----------------------------
--- Type structure for jenkel_enum
+-- Sequence structure for bidang_dokter_id_seq
 -- ----------------------------
-DROP TYPE IF EXISTS "public"."jenkel_enum";
-CREATE TYPE "public"."jenkel_enum" AS ENUM (
-  'Laki-laki',
-  'Perempuan'
-);
-ALTER TYPE "public"."jenkel_enum" OWNER TO "postgres";
+DROP SEQUENCE IF EXISTS "public"."bidang_dokter_id_seq";
+CREATE SEQUENCE "public"."bidang_dokter_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 9223372036854775807
+START 1
+CACHE 1;
+
+-- ----------------------------
+-- Sequence structure for dokter_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "public"."dokter_id_seq";
+CREATE SEQUENCE "public"."dokter_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 9223372036854775807
+START 1
+CACHE 1;
 
 -- ----------------------------
 -- Sequence structure for failed_jobs_id_seq
 -- ----------------------------
 DROP SEQUENCE IF EXISTS "public"."failed_jobs_id_seq";
 CREATE SEQUENCE "public"."failed_jobs_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 9223372036854775807
+START 1
+CACHE 1;
+
+-- ----------------------------
+-- Sequence structure for jadwal_dokter_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "public"."jadwal_dokter_id_seq";
+CREATE SEQUENCE "public"."jadwal_dokter_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 9223372036854775807
+START 1
+CACHE 1;
+
+-- ----------------------------
+-- Sequence structure for keluhan_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "public"."keluhan_id_seq";
+CREATE SEQUENCE "public"."keluhan_id_seq" 
 INCREMENT 1
 MINVALUE  1
 MAXVALUE 9223372036854775807
@@ -84,6 +128,17 @@ START 1
 CACHE 1;
 
 -- ----------------------------
+-- Sequence structure for ruangan_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "public"."ruangan_id_seq";
+CREATE SEQUENCE "public"."ruangan_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 9223372036854775807
+START 1
+CACHE 1;
+
+-- ----------------------------
 -- Sequence structure for users_id_seq
 -- ----------------------------
 DROP SEQUENCE IF EXISTS "public"."users_id_seq";
@@ -93,6 +148,54 @@ MINVALUE  1
 MAXVALUE 9223372036854775807
 START 1
 CACHE 1;
+
+-- ----------------------------
+-- Table structure for bidang_dokter
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."bidang_dokter";
+CREATE TABLE "public"."bidang_dokter" (
+  "id" int8 NOT NULL DEFAULT nextval('bidang_dokter_id_seq'::regclass),
+  "bidang" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "created_at" timestamp(0),
+  "updated_at" timestamp(0)
+)
+;
+
+-- ----------------------------
+-- Records of bidang_dokter
+-- ----------------------------
+INSERT INTO "public"."bidang_dokter" VALUES (1, 'Umum', NULL, NULL);
+INSERT INTO "public"."bidang_dokter" VALUES (3, 'Spesialis THT', NULL, NULL);
+INSERT INTO "public"."bidang_dokter" VALUES (4, 'Spesialis Jantung', NULL, NULL);
+INSERT INTO "public"."bidang_dokter" VALUES (5, 'Spesialis Syaraf', NULL, NULL);
+INSERT INTO "public"."bidang_dokter" VALUES (2, 'Spesialis Anak', NULL, NULL);
+INSERT INTO "public"."bidang_dokter" VALUES (6, 'Spesialis Penyakit Dalam', NULL, NULL);
+
+-- ----------------------------
+-- Table structure for dokter
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."dokter";
+CREATE TABLE "public"."dokter" (
+  "id" int8 NOT NULL DEFAULT nextval('dokter_id_seq'::regclass),
+  "foto" text COLLATE "pg_catalog"."default",
+  "nama_dokter" text COLLATE "pg_catalog"."default" NOT NULL,
+  "jenkel" text COLLATE "pg_catalog"."default" NOT NULL,
+  "tgl_lahir" date NOT NULL,
+  "bidang_id" int8 NOT NULL,
+  "created_at" timestamp(0),
+  "updated_at" timestamp(0)
+)
+;
+
+-- ----------------------------
+-- Records of dokter
+-- ----------------------------
+INSERT INTO "public"."dokter" VALUES (9, 'https://hasnamedika.com/wp-content/uploads/2021/07/Irlandi-dr.jpg', 'Rendi Fajri', 'Laki-laki', '1990-11-02', 1, NULL, NULL);
+INSERT INTO "public"."dokter" VALUES (1, 'https://d1vbn70lmn1nqe.cloudfront.net/prod/wp-content/uploads/2022/03/08055643/Cari-Dokter-Umum-Terbaik-di-Yogyakarta_-Ini-5-Rekomendasinya.jpg.webp', 'Ariliana', 'Perempuan', '1997-05-12', 1, NULL, NULL);
+INSERT INTO "public"."dokter" VALUES (2, 'https://www.inilah.com/_next/image?url=https%3A%2F%2Fc.inilah.com%2Freborn%2F2023%2F08%2F1%2F0509_110616_1b9f_inilah_com_ee50ff7c0e.jpg&w=1920&q=75', 'Wijaya', 'Laki-laki', '1998-02-15', 1, NULL, NULL);
+INSERT INTO "public"."dokter" VALUES (3, 'https://purimedika.com/wp-content/uploads/2020/11/Dr-Lestari-Raharjo.jpg', 'Irianto', 'Laki-laki', '1986-01-01', 3, NULL, NULL);
+INSERT INTO "public"."dokter" VALUES (4, 'https://cloud.jpnn.com/photo/arsip/normal/2023/05/26/nicho-saputra-nugraha-influencer-sekaligus-dokter-ganteng-ya-fbox.jpg', 'Lukman Hajime', 'Laki-laki', '1995-08-27', 2, NULL, NULL);
+INSERT INTO "public"."dokter" VALUES (5, 'https://static.promediateknologi.id/crop/0x0:0x0/0x0/webp/photo/p2/79/2023/07/29/1-FT-A-dokter-2109212324.jpg', 'Fuji Nami', 'Perempuan', '1996-12-22', 2, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for failed_jobs
@@ -111,6 +214,69 @@ CREATE TABLE "public"."failed_jobs" (
 
 -- ----------------------------
 -- Records of failed_jobs
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for jadwal_dokter
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."jadwal_dokter";
+CREATE TABLE "public"."jadwal_dokter" (
+  "id" int8 NOT NULL DEFAULT nextval('jadwal_dokter_id_seq'::regclass),
+  "hari" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "jam_mulai" time(0) NOT NULL,
+  "jam_berakhir" time(0) NOT NULL,
+  "dokter_id" int8 NOT NULL,
+  "ruang_id" int8 NOT NULL,
+  "created_at" timestamp(0),
+  "updated_at" timestamp(0)
+)
+;
+
+-- ----------------------------
+-- Records of jadwal_dokter
+-- ----------------------------
+INSERT INTO "public"."jadwal_dokter" VALUES (3, 'Senin', '07:00:00', '12:00:00', 9, 1, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (4, 'Kamis', '08:00:00', '13:00:00', 9, 1, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (6, 'Rabu', '13:00:00', '16:00:00', 1, 2, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (7, 'Selasa', '08:00:00', '13:00:00', 1, 3, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (9, 'Rabu', '09:00:00', '16:00:00', 3, 4, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (11, 'Jumat', '13:00:00', '17:00:00', 4, 3, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (12, 'Jumat', '06:00:00', '11:30:00', 2, 1, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (5, 'Senin', '07:00:00', '17:00:00', 1, 2, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (13, 'Senin', '07:00:00', '14:30:00', 2, 3, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (14, 'Senin', '09:00:00', '15:00:00', 3, 4, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (15, 'Sabtu', '07:00:00', '15:00:00', 1, 1, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (16, 'Sabtu', '07:00:00', '15:00:00', 2, 2, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (17, 'Sabtu', '07:00:00', '15:00:00', 9, 3, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (18, 'Minggu', '07:00:00', '15:00:00', 1, 3, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (19, 'Minggu', '07:00:00', '15:00:00', 2, 2, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (20, 'Minggu', '07:00:00', '15:00:00', 9, 1, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (22, 'Selasa', '07:00:00', '15:00:00', 5, 4, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (23, 'Rabu', '07:00:00', '13:00:00', 5, 3, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (24, 'Kamis', '08:00:00', '12:00:00', 5, 2, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (8, 'Selasa', '07:00:00', '13:00:00', 2, 1, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (10, 'Kamis', '07:00:00', '14:00:00', 3, 4, NULL, NULL);
+INSERT INTO "public"."jadwal_dokter" VALUES (25, 'Kamis', '07:00:00', '17:30:00', 2, 5, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for keluhan
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."keluhan";
+CREATE TABLE "public"."keluhan" (
+  "id" int8 NOT NULL DEFAULT nextval('keluhan_id_seq'::regclass),
+  "pasien_id" int8 NOT NULL,
+  "detail_keluhan" text COLLATE "pg_catalog"."default" NOT NULL,
+  "is_bpjs" bool NOT NULL,
+  "jadwal_dokter_id" int8 NOT NULL,
+  "nomor_tiket" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "status" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "created_at" timestamp(0),
+  "updated_at" timestamp(0)
+)
+;
+
+-- ----------------------------
+-- Records of keluhan
 -- ----------------------------
 
 -- ----------------------------
@@ -667,6 +833,11 @@ INSERT INTO "public"."migrations" VALUES (7, '2014_10_12_100000_create_password_
 INSERT INTO "public"."migrations" VALUES (8, '2019_08_19_000000_create_failed_jobs_table', 1);
 INSERT INTO "public"."migrations" VALUES (9, '2019_12_14_000001_create_personal_access_tokens_table', 1);
 INSERT INTO "public"."migrations" VALUES (11, '2024_04_18_040548_create_pasien_table', 2);
+INSERT INTO "public"."migrations" VALUES (17, '2024_04_19_083650_create_bidang_dokter_table', 3);
+INSERT INTO "public"."migrations" VALUES (18, '2024_04_19_083726_create_dokter_table', 3);
+INSERT INTO "public"."migrations" VALUES (26, '2024_04_19_084434_create_ruangan_table', 4);
+INSERT INTO "public"."migrations" VALUES (27, '2024_04_19_094328_create_jadwal_dokter_table', 4);
+INSERT INTO "public"."migrations" VALUES (28, '2024_04_19_094907_create_keluhan_table', 4);
 
 -- ----------------------------
 -- Table structure for pasien
@@ -694,7 +865,7 @@ CREATE TABLE "public"."pasien" (
 -- Records of pasien
 -- ----------------------------
 INSERT INTO "public"."pasien" VALUES (2, 1, '3000356777988766', 'Test Pasien', 'Laki-laki', '2007-07-03', '1217', '+6289655031225', NULL, NULL, 'default', 't', NULL, NULL);
-INSERT INTO "public"."pasien" VALUES (3, 5, '30001679239719', 'Muhammad Fadlul Hafiizh', 'Laki-laki', '2003-05-27', '3273', '+6289655031225', 'account/user_image/5_18042024025654633d7cc6b949e.jpg', 'account/bpjs/5_18042024025654Sample Pdf.pdf', NULL, 't', '2024-04-18 14:28:48', '2024-04-18 14:56:55');
+INSERT INTO "public"."pasien" VALUES (3, 1, '30001679239719', 'Fadlul Hafiizh', 'Laki-laki', '2003-05-27', '3273', '+6289655031225', 'account/user_image/5_18042024025654633d7cc6b949e.jpg', 'account/bpjs/5_18042024025654Sample Pdf.pdf', NULL, 't', '2024-04-18 14:28:48', '2024-04-19 09:15:59');
 
 -- ----------------------------
 -- Table structure for password_reset_tokens
@@ -732,7 +903,17 @@ CREATE TABLE "public"."personal_access_tokens" (
 -- ----------------------------
 -- Records of personal_access_tokens
 -- ----------------------------
-INSERT INTO "public"."personal_access_tokens" VALUES (3, 'App\Models\User', 5, 'API_TOKEN', 'f72452c519727c728293dab6e93d6afaf18a249c9a6fa525564601132d41fd09', '["*"]', '2024-04-18 14:56:53', NULL, '2024-04-18 14:29:24', '2024-04-18 14:56:53');
+INSERT INTO "public"."personal_access_tokens" VALUES (9, 'App\Models\User', 1, 'API_TOKEN', '73b64c3ae0c4f448bb7f402ff096b104e4e2613c019136516b7ac097e8160c8f', '["*"]', NULL, NULL, '2024-04-18 21:55:57', '2024-04-18 21:55:57');
+INSERT INTO "public"."personal_access_tokens" VALUES (10, 'App\Models\User', 1, 'API_TOKEN', '507653778d0867227fbe043d2deaa9f4d2218390aa47d063a70125675f0a7bea', '["*"]', NULL, NULL, '2024-04-18 22:09:32', '2024-04-18 22:09:32');
+INSERT INTO "public"."personal_access_tokens" VALUES (19, 'App\Models\User', 1, 'API_TOKEN', 'a2ceb718d73cafed5b8ff1e84e8cac53348fda32028f5e80ab5f066c6e3dd4b7', '["*"]', '2024-04-20 11:01:55', NULL, '2024-04-20 10:57:49', '2024-04-20 11:01:55');
+INSERT INTO "public"."personal_access_tokens" VALUES (11, 'App\Models\User', 1, 'API_TOKEN', '35c71b150052d347b1af1a413e6369cb73ade88b11be14cdf60fcdde7866fb6b', '["*"]', '2024-04-20 08:05:05', NULL, '2024-04-19 09:03:17', '2024-04-20 08:05:05');
+INSERT INTO "public"."personal_access_tokens" VALUES (13, 'App\Models\User', 1, 'API_TOKEN', '9ab546d9a7f7d04c6edf898835d410242346b1ffbb7f43c0ddf39366007829cc', '["*"]', '2024-04-19 17:32:32', NULL, '2024-04-19 16:25:18', '2024-04-19 17:32:32');
+INSERT INTO "public"."personal_access_tokens" VALUES (17, 'App\Models\User', 1, 'API_TOKEN', 'e9330fe7ae5b350d0b4e010d195f65ba628ecdeb700b7232a2b469422634d261', '["*"]', '2024-04-20 06:40:56', NULL, '2024-04-20 05:21:58', '2024-04-20 06:40:56');
+INSERT INTO "public"."personal_access_tokens" VALUES (15, 'App\Models\User', 1, 'API_TOKEN', '626a4e2d51a7437c5b75187270d93c9ae7afa6068d9fd32e9ebbc4976419c19d', '["*"]', '2024-04-19 17:40:06', NULL, '2024-04-19 17:22:59', '2024-04-19 17:40:06');
+INSERT INTO "public"."personal_access_tokens" VALUES (16, 'App\Models\User', 1, 'API_TOKEN', '814f5147c2806535c7bf3ab275f9d9ecea7ce5fc867343664b9cbf1da8ed1335', '["*"]', NULL, NULL, '2024-04-19 18:46:26', '2024-04-19 18:46:26');
+INSERT INTO "public"."personal_access_tokens" VALUES (14, 'App\Models\User', 1, 'API_TOKEN', 'dc5cd6e5ac1adad3ad5e23d53bed375945b3f0ccfc6989bb1cf0e6000c57e830', '["*"]', '2024-04-20 10:28:16', NULL, '2024-04-19 17:09:55', '2024-04-20 10:28:16');
+INSERT INTO "public"."personal_access_tokens" VALUES (12, 'App\Models\User', 1, 'API_TOKEN', '4c43f7bda40bc9c7f5838c6e7d4f48d9437d8c6a76bd13a02bb91e7e5c9d8ffc', '["*"]', NULL, NULL, '2024-04-19 15:25:39', '2024-04-19 15:25:39');
+INSERT INTO "public"."personal_access_tokens" VALUES (18, 'App\Models\User', 1, 'API_TOKEN', 'fe0b84d4352ce023f2443b687ce196868bf860bd4f558f1cd371dfad352a3414', '["*"]', '2024-04-20 10:49:38', NULL, '2024-04-20 10:49:12', '2024-04-20 10:49:38');
 
 -- ----------------------------
 -- Table structure for provinsi
@@ -789,6 +970,28 @@ INSERT INTO "public"."provinsi" VALUES ('18', '18', 'Lampung', '2019-03-28 13:34
 INSERT INTO "public"."provinsi" VALUES ('36', '36', 'Banten', '2019-03-28 13:34:20.817', '2019-03-28 13:34:20.817', NULL, NULL, NULL);
 
 -- ----------------------------
+-- Table structure for ruangan
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."ruangan";
+CREATE TABLE "public"."ruangan" (
+  "id" int8 NOT NULL DEFAULT nextval('ruangan_id_seq'::regclass),
+  "nama_ruang" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "detail_ruang" text COLLATE "pg_catalog"."default" NOT NULL,
+  "created_at" timestamp(0),
+  "updated_at" timestamp(0)
+)
+;
+
+-- ----------------------------
+-- Records of ruangan
+-- ----------------------------
+INSERT INTO "public"."ruangan" VALUES (1, 'A1-2', 'Lantai 1', NULL, NULL);
+INSERT INTO "public"."ruangan" VALUES (2, 'A2-15', 'Lantai 2', NULL, NULL);
+INSERT INTO "public"."ruangan" VALUES (3, 'B4-1', 'Lantai 4', NULL, NULL);
+INSERT INTO "public"."ruangan" VALUES (4, 'E4-2', 'Lantai 4', NULL, NULL);
+INSERT INTO "public"."ruangan" VALUES (5, 'E3-13', 'Lantai 3', NULL, NULL);
+
+-- ----------------------------
 -- Table structure for users
 -- ----------------------------
 DROP TABLE IF EXISTS "public"."users";
@@ -810,7 +1013,21 @@ CREATE TABLE "public"."users" (
 -- Records of users
 -- ----------------------------
 INSERT INTO "public"."users" VALUES (1, 'Test Pasien', 'dummy@gmail.com', '2024-04-18 04:47:39', '$2y$12$WH/uo0s7wNDvN9huSmpMhufrgr4sHdzM/4I2g..2/vXoabToG23am', 'secretpass', 'user', 'mTsvSGsEWx', '2024-04-18 04:47:42', '2024-04-18 04:47:42');
-INSERT INTO "public"."users" VALUES (5, 'Muhammad Fadlul Hafiizh', 'muh.hafiizh56@gmail.com', NULL, '$2y$12$4lPkL37t2Ak94SzNMTWMduU37JyfhMPrNRxM/2/q5ATgLpZf7Rh2C', 'secretpass', 'user', NULL, '2024-04-18 14:28:48', '2024-04-18 14:53:43');
+INSERT INTO "public"."users" VALUES (5, 'Fadlul Hafiizh', 'muh.hafiizh56@gmail.com', NULL, '$2y$12$4lPkL37t2Ak94SzNMTWMduU37JyfhMPrNRxM/2/q5ATgLpZf7Rh2C', 'secretpass', 'user', NULL, '2024-04-18 14:28:48', '2024-04-19 09:15:59');
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
+ALTER SEQUENCE "public"."bidang_dokter_id_seq"
+OWNED BY "public"."bidang_dokter"."id";
+SELECT setval('"public"."bidang_dokter_id_seq"', 7, true);
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
+ALTER SEQUENCE "public"."dokter_id_seq"
+OWNED BY "public"."dokter"."id";
+SELECT setval('"public"."dokter_id_seq"', 10, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -822,23 +1039,44 @@ SELECT setval('"public"."failed_jobs_id_seq"', 2, false);
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
+ALTER SEQUENCE "public"."jadwal_dokter_id_seq"
+OWNED BY "public"."jadwal_dokter"."id";
+SELECT setval('"public"."jadwal_dokter_id_seq"', 26, true);
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
+ALTER SEQUENCE "public"."keluhan_id_seq"
+OWNED BY "public"."keluhan"."id";
+SELECT setval('"public"."keluhan_id_seq"', 2, false);
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
 ALTER SEQUENCE "public"."migrations_id_seq"
 OWNED BY "public"."migrations"."id";
-SELECT setval('"public"."migrations_id_seq"', 12, true);
+SELECT setval('"public"."migrations_id_seq"', 29, true);
 
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
 ALTER SEQUENCE "public"."pasien_id_seq"
 OWNED BY "public"."pasien"."id";
-SELECT setval('"public"."pasien_id_seq"', 6, true);
+SELECT setval('"public"."pasien_id_seq"', 7, true);
 
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
 ALTER SEQUENCE "public"."personal_access_tokens_id_seq"
 OWNED BY "public"."personal_access_tokens"."id";
-SELECT setval('"public"."personal_access_tokens_id_seq"', 4, true);
+SELECT setval('"public"."personal_access_tokens_id_seq"', 20, true);
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
+ALTER SEQUENCE "public"."ruangan_id_seq"
+OWNED BY "public"."ruangan"."id";
+SELECT setval('"public"."ruangan_id_seq"', 6, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -846,6 +1084,16 @@ SELECT setval('"public"."personal_access_tokens_id_seq"', 4, true);
 ALTER SEQUENCE "public"."users_id_seq"
 OWNED BY "public"."users"."id";
 SELECT setval('"public"."users_id_seq"', 6, true);
+
+-- ----------------------------
+-- Primary Key structure for table bidang_dokter
+-- ----------------------------
+ALTER TABLE "public"."bidang_dokter" ADD CONSTRAINT "bidang_dokter_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Primary Key structure for table dokter
+-- ----------------------------
+ALTER TABLE "public"."dokter" ADD CONSTRAINT "dokter_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Uniques structure for table failed_jobs
@@ -856,6 +1104,16 @@ ALTER TABLE "public"."failed_jobs" ADD CONSTRAINT "failed_jobs_uuid_unique" UNIQ
 -- Primary Key structure for table failed_jobs
 -- ----------------------------
 ALTER TABLE "public"."failed_jobs" ADD CONSTRAINT "failed_jobs_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Primary Key structure for table jadwal_dokter
+-- ----------------------------
+ALTER TABLE "public"."jadwal_dokter" ADD CONSTRAINT "jadwal_dokter_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Primary Key structure for table keluhan
+-- ----------------------------
+ALTER TABLE "public"."keluhan" ADD CONSTRAINT "keluhan_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Primary Key structure for table kota
@@ -906,6 +1164,11 @@ ALTER TABLE "public"."personal_access_tokens" ADD CONSTRAINT "personal_access_to
 ALTER TABLE "public"."provinsi" ADD CONSTRAINT "provinsi_pkey" PRIMARY KEY ("uid_provinsi");
 
 -- ----------------------------
+-- Primary Key structure for table ruangan
+-- ----------------------------
+ALTER TABLE "public"."ruangan" ADD CONSTRAINT "ruangan_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
 -- Uniques structure for table users
 -- ----------------------------
 ALTER TABLE "public"."users" ADD CONSTRAINT "users_email_unique" UNIQUE ("email");
@@ -919,6 +1182,17 @@ ALTER TABLE "public"."users" ADD CONSTRAINT "users_role_check" CHECK (role::text
 -- Primary Key structure for table users
 -- ----------------------------
 ALTER TABLE "public"."users" ADD CONSTRAINT "users_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Foreign Keys structure for table dokter
+-- ----------------------------
+ALTER TABLE "public"."dokter" ADD CONSTRAINT "dokter_bidang_id_foreign" FOREIGN KEY ("bidang_id") REFERENCES "public"."bidang_dokter" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- ----------------------------
+-- Foreign Keys structure for table jadwal_dokter
+-- ----------------------------
+ALTER TABLE "public"."jadwal_dokter" ADD CONSTRAINT "jadwal_dokter_dokter_id_foreign" FOREIGN KEY ("dokter_id") REFERENCES "public"."dokter" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE "public"."jadwal_dokter" ADD CONSTRAINT "jadwal_dokter_ruang_id_foreign" FOREIGN KEY ("ruang_id") REFERENCES "public"."ruangan" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- ----------------------------
 -- Foreign Keys structure for table pasien

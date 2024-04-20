@@ -12,7 +12,7 @@ class ProvinsiController extends Controller
         try{
             $data = Provinsi::get();
             return $this->sendResponse($data, "Data berhasil diambil");
-        }catch(\Exception $e){
+        }catch(\Throwable $e){
             return $this->sendError($e->getMessage(), [], 500);
         }
     }

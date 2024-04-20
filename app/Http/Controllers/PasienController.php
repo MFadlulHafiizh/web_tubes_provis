@@ -14,13 +14,13 @@ class PasienController extends Controller
         try{
             $data = Pasien::query();
             if($request->user_id)
-                $data->where('user_id', $request->user_id);
+                $data->where('user_id', $request->user);
             if($request->is_keluarga == "true")
                 $data->where('is_default', false);
             
             $data = $data->get();
             return $this->sendResponse($data, "Data berhasil diambil");
-        }catch(\Exception $e){
+        }catch(\Throwable $e){
             return $this->sendError($e->getMessage(), [], 500);
         }
     }

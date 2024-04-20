@@ -15,7 +15,7 @@ class KotaController extends Controller
                 $data->where('provinsi_uid', $request->uid_provinsi);
             $data = $data->get();
             return $this->sendResponse($data, "Data berhasil diambil");
-        }catch(\Exception $e){
+        }catch(\Throwable $e){
             return $this->sendError($e->getMessage(), [], 500);
         }
     }
