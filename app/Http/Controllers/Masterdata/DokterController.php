@@ -10,7 +10,7 @@ class DokterController extends Controller
 {
     public function getList(Request $request){
         try{
-            $data = Dokter::with(['bidang', 'jadwal' => function($q)use($request){$q->where('hari', $request->hari);}]);
+            $data = Dokter::with(['bidang', 'jadwal' => function($q)use($request){$q->where('hari', $request->hari)->with('ruangan');}]);
             if($request->hari){
                 $data->whereHas('jadwal', function($q)use($request){
                     $q->where('hari', $request->hari);
