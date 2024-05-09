@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('jadwal_dokter_id');
             $table->string('nomor_tiket');
             $table->string('status');
+            $table->text('qr_code');
             $table->timestamps();
         });
     }

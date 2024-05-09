@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Pasien;
+use App\Models\Keluhan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class PasienController extends Controller
 {
@@ -95,6 +99,63 @@ class PasienController extends Controller
             DB::commit();
             return $this->sendResponse($newKeluarga, 'Berhasil '. $mode .' profile');
         }catch(\Throwable $th){
+            DB::rollback();
+            return $this->sendError($th->getMessage(), [], 500);
+        }
+    }
+
+    public function buatJanjiTemu(Request $request){
+        $rules =  [
+            'pasien_id' => 'required',
+            'is_bpjs' => 'required',
+            'detail_keluhan' => 'required',
+            'jadwal_dokter_id' => 'required',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if($validator->fails()){
+            $fieldsWithErrorMessagesArray = $validator->messages()->get('*');
+            $messages = [];
+            foreach($fieldsWithErrorMessagesArray as $mess){
+                array_push($messages, $mess);
+            }
+            return $this->sendError('Validation Error.', $messages);
+        }
+        DB::beginTransaction();
+        try{
+            $janjiTemu = new Keluhan;
+            $janjiTemu->pasien_id = $request->pasien_id;
+            $janjiTemu->detail_keluhan = $request->detail_keluhan;
+            $janjiTemu->is_bpjs = $request->is_bpjs;
+            $janjiTemu->jadwal_dokter_id = $request->jadwal_dokter_id;
+            $ticketCode = 'TK'. Carbon::now()->format('dmys') . $request->pasien_id . $request->jadwal_dokter_id;
+            $janjiTemu->nomor_tiket =  $ticketCode;
+            $image = QrCode::size(200)
+                ->generate(env('PUBLIC_IP') . '/info-janji-temu/validate/' .$ticketCode);
+            $url_image = 'tiket_pasien/'. $ticketCode . '.svg';
+            Storage::disk('public')->put($url_image, $image);
+            $janjiTemu->qr_code = $url_image;
+            $janjiTemu->status = 'Akan Datang';
+            $janjiTemu->save();
+            DB::commit();
+            $ticket = $janjiTemu->with(['pasien', 'jadwalDokter.dokter', 'jadwalDokter.ruangan'])->first();
+            return $this->sendResponse($ticket, 'Berhasil membuat janji temu');
+        }catch(\Throwable $th){
+            DB::rollback();
+            return $this->sendError($th->getMessage(), [], 500);
+        }
+    }
+
+    public function cekJanjiTemu($no_tiket){
+        try{
+            $ticket = Keluhan::where('nomor_tiket', $no_tiket)->with(['pasien', 'jadwalDokter.dokter', 'jadwalDokter.ruangan'])->first();
+            if($ticket)
+                return $this->sendResponse($ticket, 'Informasi tiket ditemukan');
+            else
+                return $this->sendResponse([], 'Tiket tidak ditemukan');
+        }
+        catch(\Throwable $th){
             DB::rollback();
             return $this->sendError($th->getMessage(), [], 500);
         }

@@ -19,6 +19,8 @@ use App\Http\Controllers\Masterdata\ProvinsiController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+Route::get('test', [PasienController::class, 'buatJanjiTemu']);
+Route::get('info-janji-temu/validate/{no_tiket}', [PasienController::class, 'cekJanjiTemu'])->name('validate.ticket');
 Route::controller(AuthenticationController::class)->group(function(){
     Route::post('register', 'register');
     Route::post('login', 'login');
@@ -38,4 +40,5 @@ Route::middleware('auth:sanctum')->group(function(){
         Route::get('list-jadwal-dokter', [JadwalDokterController::class, 'getList']);
     });
     Route::post('profile/storeUpdate', [PasienController::class, 'storeUpdateProfileAnggotaKeluarga']);
+    Route::post('buat-janji', [PasienController::class, 'buatJanjiTemu']);
 });
