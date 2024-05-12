@@ -18,7 +18,7 @@ class PasienController extends Controller
         try{
             $data = Pasien::query();
             if($request->user_id)
-                $data->where('user_id', $request->user);
+                $data->where('user_id', $request->user()->id);
             if($request->is_keluarga == "true")
                 $data->where('is_default', false);
             
@@ -107,9 +107,11 @@ class PasienController extends Controller
     public function buatJanjiTemu(Request $request){
         $rules =  [
             'pasien_id' => 'required',
-            'is_bpjs' => 'required',
             'detail_keluhan' => 'required',
-            'jadwal_dokter_id' => 'required',
+            'is_bpjs' => 'required',
+            'dokter_id' => 'required',
+            'tanggal' => 'required',
+            'jam' => 'required',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -128,7 +130,9 @@ class PasienController extends Controller
             $janjiTemu->pasien_id = $request->pasien_id;
             $janjiTemu->detail_keluhan = $request->detail_keluhan;
             $janjiTemu->is_bpjs = $request->is_bpjs;
-            $janjiTemu->jadwal_dokter_id = $request->jadwal_dokter_id;
+            $janjiTemu->dokter_id = $request->dokter_id;
+            $janjiTemu->tanggal = $request->tanggal;
+            $janjiTemu->jam = $request->jam;
             $ticketCode = 'TK'. Carbon::now()->format('dmys') . $request->pasien_id . $request->jadwal_dokter_id;
             $janjiTemu->nomor_tiket =  $ticketCode;
             $image = QrCode::size(200)
@@ -139,12 +143,28 @@ class PasienController extends Controller
             $janjiTemu->status = 'Akan Datang';
             $janjiTemu->save();
             DB::commit();
-            $ticket = $janjiTemu->with(['pasien', 'jadwalDokter.dokter', 'jadwalDokter.ruangan'])->first();
+            $ticket = $janjiTemu->with(['pasien'])->first();
             return $this->sendResponse($ticket, 'Berhasil membuat janji temu');
         }catch(\Throwable $th){
             DB::rollback();
             return $this->sendError($th->getMessage(), [], 500);
         }
+    }
+
+    public function getListJanjiTemu(Request $request){
+        try{
+            $allPasienFromUser = Pasien::where('user_id', $request->user()->id)->pluck('id');
+            $janjiTemu = Keluhan::whereIn('pasien_id', $allPasienFromUser->toArray())->with(['pasien', 'dokter.bidang'])->get();
+            return $this->sendResponse($janjiTemu, 'Data berhasil diambil');
+        }
+        catch(\Throwable $th){
+            DB::rollback();
+            return $this->sendError($th->getMessage(), [], 500);
+        }
+    }
+
+    public function indexValidasiKehadiran(Request $request){
+        return view('validasi_page');
     }
 
     public function cekJanjiTemu($no_tiket){

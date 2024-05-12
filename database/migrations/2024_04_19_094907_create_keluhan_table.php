@@ -16,11 +16,16 @@ return new class extends Migration
             $table->unsignedBigInteger('pasien_id');
             $table->text('detail_keluhan');
             $table->boolean('is_bpjs');
-            $table->unsignedBigInteger('jadwal_dokter_id');
+            $table->unsignedBigInteger('dokter_id');
+            $table->date('tanggal');
+            $table->time('jam');
             $table->string('nomor_tiket');
             $table->string('status');
             $table->text('qr_code');
             $table->timestamps();
+
+            $table->foreign('pasien_id')->references('id')->on('pasien');
+            $table->foreign('dokter_id')->references('id')->on('dokter');
         });
     }
 

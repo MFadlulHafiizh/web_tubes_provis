@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Masterdata\Dokter;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Keluhan extends Model
 {
@@ -11,11 +12,10 @@ class Keluhan extends Model
     protected $table = 'keluhan';
     protected $guarded = ['id'];
 
-    public function jadwalDokter(){
-        return $this->belongsTo(JadwalDokter::class, 'jadwal_dokter_id');
-    }
-
     public function pasien(){
         return $this->belongsTo(Pasien::class, 'pasien_id');
+    }
+    public function dokter(){
+        return $this->belongsTo(Dokter::class, 'dokter_id');
     }
 }

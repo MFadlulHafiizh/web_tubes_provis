@@ -41,4 +41,5 @@ Route::middleware('auth:sanctum')->group(function(){
     });
     Route::post('profile/storeUpdate', [PasienController::class, 'storeUpdateProfileAnggotaKeluarga']);
     Route::post('buat-janji', [PasienController::class, 'buatJanjiTemu']);
+    Route::get('list-janji-temu', [PasienController::class, 'getListJanjiTemu']);
 });
