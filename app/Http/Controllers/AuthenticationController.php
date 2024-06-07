@@ -96,6 +96,9 @@ class AuthenticationController extends Controller
     
             if(Auth::attempt($request->only(['email', 'password']))){
                 $user = User::where('email', $request->email)->with('detailProfile')->first();
+                if($user->role != 'user'){
+                    return $this->sendError('Unauthorised.', ['error'=>'Hanya user/pasien yang dapat melakukan login pada aplikasi mobile']);
+                }
                 $success['token'] =  $user->createToken('API_TOKEN')->plainTextToken;
                 $success['user_info'] =  $user;
                 return $this->sendResponse($success, 'User berhasil login');

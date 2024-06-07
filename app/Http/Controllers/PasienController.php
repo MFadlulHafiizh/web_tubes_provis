@@ -6,19 +6,21 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Pasien;
 use App\Models\Keluhan;
+use App\Models\JadwalDokter;
 use Illuminate\Http\Request;
+use App\Models\DetailKunjungan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\DokterController;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class PasienController extends Controller
 {
     public function getList(Request $request){
         try{
-            $data = Pasien::query();
-            if($request->user_id)
-                $data->where('user_id', $request->user()->id);
+            $data = Pasien::where('user_id', $request->user()->id);
             if($request->is_keluarga == "true")
                 $data->where('is_default', false);
             
@@ -32,7 +34,7 @@ class PasienController extends Controller
     public function storeUpdateProfileAnggotaKeluarga(Request $request){
         $rules =  [
             'name' => 'required',
-            'email' => 'email|unique:users,email',
+            // 'email' => 'email|unique:users,email',
             'nik' => 'required|integer',
             'jenkel' => 'required|in:Laki-laki,Perempuan',
             'tgl_lahir' => 'required|date',
@@ -71,7 +73,11 @@ class PasienController extends Controller
                         $account->salt = $request->password;
                     }
                     $account->save();
+                }else{
+                    $newKeluarga->is_default = false;
                 }
+            }else{
+                $newKeluarga->is_default = false;
             }
             $newKeluarga->user_id = $request->user()->id;
             $newKeluarga->nik = $request->nik ?? $newKeluarga->nik;
@@ -80,18 +86,18 @@ class PasienController extends Controller
             $newKeluarga->tgl_lahir = $request->tgl_lahir ?? $newKeluarga->tgl_lahir;
             $newKeluarga->tempat_lahir = $request->tempat_lahir ?? $newKeluarga->tempat_lahir;
             $newKeluarga->no_telp = $request->no_telp ?? $newKeluarga->no_telp;
-            $newKeluarga->is_default = true;
+            
             if($request->hasFile('foto')){
                 $file = $request->file('foto');
                 $originalName = $file->getClientOriginalName();
-                $filename = $account->id . '_' .date('dmYhis') . $originalName;
+                $filename = $request->user()->id . '_' .date('dmYhis') . $originalName;
                 $file->storeAs('account/user_image/', $filename, "public");
                 $newKeluarga->foto = 'account/user_image/'.$filename;
             }
             if($request->hasFile('file_bpjs')){
                 $file = $request->file('file_bpjs');
                 $originalName = $file->getClientOriginalName();
-                $filename = $account->id . '_' .date('dmYhis') . $originalName;
+                $filename = $request->user()->id . '_' .date('dmYhis') . $originalName;
                 $file->storeAs('account/bpjs/', $filename, "public");
                 $newKeluarga->file_bpjs = 'account/bpjs/'.$filename;
             }
@@ -101,6 +107,18 @@ class PasienController extends Controller
         }catch(\Throwable $th){
             DB::rollback();
             return $this->sendError($th->getMessage(), [], 500);
+        }
+    }
+
+    public function deleteProfileAnggotaKeluarga(Request $request){
+        try{
+            $data = Pasien::find($request->pasien_id);
+            if($data->delete()){
+                return $this->sendResponse([], "Data berhasil dihapus");
+            }
+            return $this->sendError("Data gagal dihapus", []);
+        }catch(\Exception $e){
+            return $this->sendError($e->getMessage(), [], 500);
         }
     }
 
@@ -135,30 +153,94 @@ class PasienController extends Controller
             $janjiTemu->jam = $request->jam;
             $ticketCode = 'TK'. Carbon::now()->format('dmys') . $request->pasien_id . $request->jadwal_dokter_id;
             $janjiTemu->nomor_tiket =  $ticketCode;
-            $image = QrCode::size(200)
-                ->generate(env('PUBLIC_IP') . '/info-janji-temu/validate/' .$ticketCode);
+            $image = QrCode::size(300)
+                ->generate($ticketCode);
             $url_image = 'tiket_pasien/'. $ticketCode . '.svg';
             Storage::disk('public')->put($url_image, $image);
             $janjiTemu->qr_code = $url_image;
-            $janjiTemu->status = 'Akan Datang';
+            $janjiTemu->status = 'akan_datang';
             $janjiTemu->save();
-            DB::commit();
-            $ticket = $janjiTemu->with(['pasien'])->first();
-            return $this->sendResponse($ticket, 'Berhasil membuat janji temu');
+            $bypass = new DokterController;
+            
+            $request['keluhan_id'] = $janjiTemu->id;
+            $request['is_enable'] = true;
+            $result = $bypass->buatJadwalKunjungan($request, false);
+            if($result){
+                DB::commit();
+                $ticket = Keluhan::where('id', $janjiTemu->id)->with(['pasien','dokter.bidang'])->first();
+                return $this->sendResponse($ticket, 'Berhasil membuat janji temu');
+            }else{
+                DB::rollback();
+                return $this->sendError('Gagal membuat janji temu', [], 500);
+            }
         }catch(\Throwable $th){
             DB::rollback();
             return $this->sendError($th->getMessage(), [], 500);
         }
     }
 
-    public function getListJanjiTemu(Request $request){
+     public function getListJanjiTemu(Request $request){
         try{
             $allPasienFromUser = Pasien::where('user_id', $request->user()->id)->pluck('id');
-            $janjiTemu = Keluhan::whereIn('pasien_id', $allPasienFromUser->toArray())->with(['pasien', 'dokter.bidang'])->get();
+            $janjiTemu = Keluhan::
+            selectRaw("
+                keluhan.id,
+                keluhan.pasien_id,
+                keluhan.detail_keluhan,
+                keluhan.is_bpjs,
+                keluhan.dokter_id,
+                keluhan.nomor_tiket,
+                keluhan.qr_code,
+
+                (SELECT 
+                id FROM detail_kunjungan
+                WHERE keluhan.id = detail_kunjungan.keluhan_id
+                AND is_enable = true
+                LIMIT 1
+                ) as id_kunjungan,
+                (SELECT 
+                tanggal FROM detail_kunjungan
+                WHERE keluhan.id = detail_kunjungan.keluhan_id
+                AND is_enable = true
+                LIMIT 1
+                ) as tanggal,
+                (SELECT 
+                jam FROM detail_kunjungan
+                WHERE keluhan.id = detail_kunjungan.keluhan_id
+                AND is_enable = true
+                LIMIT 1
+                ) as jam,
+                (SELECT 
+                status FROM detail_kunjungan
+                WHERE keluhan.id = detail_kunjungan.keluhan_id
+                AND is_enable = true
+                LIMIT 1
+                ) as status
+            ")
+            ->join('detail_kunjungan', 'detail_kunjungan.keluhan_id', 'keluhan.id')
+            ->whereIn('pasien_id', $allPasienFromUser->toArray())
+            ->with(['pasien', 'dokter.bidang'])
+            ->groupBy('keluhan.id')
+            ->get();
+
+            foreach ($janjiTemu as $key => $value) {
+                $value->jadwal = JadwalDokter::where('dokter_id', $value->dokter_id)
+                ->where('hari', $value->hari)
+                ->whereTime('jam_berakhir', ">=", $value->jam)->with('ruangan')->first();
+            }
             return $this->sendResponse($janjiTemu, 'Data berhasil diambil');
         }
         catch(\Throwable $th){
             DB::rollback();
+            return $this->sendError($th->getMessage(), [], 500);
+        }
+    }
+
+    public function getListDetailKunjungan($id_keluhan){
+        try{
+            $data = DetailKunjungan::where('keluhan_id', $id_keluhan)->get();
+            return $this->sendResponse($data, 'Data berhasil diambil');
+        }catch(\Throwable $th){
             return $this->sendError($th->getMessage(), [], 500);
         }
     }
@@ -169,14 +251,106 @@ class PasienController extends Controller
 
     public function cekJanjiTemu($no_tiket){
         try{
-            $ticket = Keluhan::where('nomor_tiket', $no_tiket)->with(['pasien', 'jadwalDokter.dokter', 'jadwalDokter.ruangan'])->first();
+            $ticket = Keluhan::
+            selectRaw("
+                keluhan.id,
+                keluhan.pasien_id,
+                keluhan.detail_keluhan,
+                keluhan.is_bpjs,
+                keluhan.dokter_id,
+                keluhan.nomor_tiket,
+                keluhan.qr_code,
+                (SELECT 
+                id FROM detail_kunjungan
+                WHERE keluhan.id = detail_kunjungan.keluhan_id
+                AND is_enable = true
+                LIMIT 1
+                ) as id_kunjungan,
+                (SELECT 
+                tanggal FROM detail_kunjungan
+                WHERE keluhan.id = detail_kunjungan.keluhan_id
+                AND is_enable = true
+                LIMIT 1
+                ) as tanggal,
+                (SELECT 
+                jam FROM detail_kunjungan
+                WHERE keluhan.id = detail_kunjungan.keluhan_id
+                AND is_enable = true
+                LIMIT 1
+                ) as jam,
+                (SELECT 
+                status FROM detail_kunjungan
+                WHERE keluhan.id = detail_kunjungan.keluhan_id
+                AND is_enable = true
+                LIMIT 1
+                ) as status
+            ")
+            ->join('detail_kunjungan', 'detail_kunjungan.keluhan_id', 'keluhan.id')
+            ->where('nomor_tiket', $no_tiket)
+            ->with(['pasien', 'dokter.bidang'])
+            ->groupBy('keluhan.id')
+            ->first();
             if($ticket)
                 return $this->sendResponse($ticket, 'Informasi tiket ditemukan');
             else
-                return $this->sendResponse([], 'Tiket tidak ditemukan');
+                return $this->sendError('Tiket ' . $no_tiket . ' tidak ditemukan', []);
         }
         catch(\Throwable $th){
             DB::rollback();
+            return $this->sendError($th->getMessage(), [], 500);
+        }
+    }
+
+    public function changeStatus(Request $request){
+        $rules =  [
+            'status' => 'required',
+            'id_kunjungan' => 'required',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if($validator->fails()){
+            $fieldsWithErrorMessagesArray = $validator->messages()->get('*');
+            $messages = [];
+            foreach($fieldsWithErrorMessagesArray as $mess){
+                array_push($messages, $mess);
+            }
+            return $this->sendError('Validation Error.', $messages);
+        }
+
+        DB::beginTransaction();
+        try{
+            $data = DetailKunjungan::find($request->id_kunjungan);
+            $data->status = $request->status;
+            $data->update();
+            $keluhan = Keluhan::find($data->keluhan_id);
+            $keluhan->status = $request->status;
+            $keluhan->update();
+            DB::commit();
+            if($request->is_from_page){
+                switch ($request->status) {
+                    case 'menunggu_panggilan':
+                        return redirect()->back()->with('success', "Berhasil konfirmasi kehadiran");
+                    break;
+                    case 'masuk_ruangan':
+                        return redirect()->back()->with('success', "Berhasil, pasien diinformasikan untuk masuk ruangan");
+                    break;
+                    case 'belum_bayar':
+                        return redirect()->back()->with('success', "Berhasil, pasien diinformasikan untuk melakukan pembayaran");
+                    break;
+                    
+                    default:
+                    return redirect()->back()->with('success', "Berhasil merubah status");
+                    break;
+                }
+            }else{
+                return $this->sendResponse([], 'Berhasil merubah status');
+            }
+        }catch(\Exception $e){
+            DB::rollback();
+            if($request->is_from_page){
+                return redirect()->back()->with('error', $e->getMessage());
+            }
             return $this->sendError($th->getMessage(), [], 500);
         }
     }

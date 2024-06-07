@@ -2,11 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DokterController;
 use App\Http\Controllers\PasienController;
 use App\Http\Controllers\JadwalDokterController;
 use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\Masterdata\KotaController;
-use App\Http\Controllers\Masterdata\DokterController;
 use App\Http\Controllers\Masterdata\ProvinsiController;
 
 /*
@@ -40,6 +40,9 @@ Route::middleware('auth:sanctum')->group(function(){
         Route::get('list-jadwal-dokter', [JadwalDokterController::class, 'getList']);
     });
     Route::post('profile/storeUpdate', [PasienController::class, 'storeUpdateProfileAnggotaKeluarga']);
+    Route::post('profile/delete', [PasienController::class, 'deleteProfileAnggotaKeluarga']);
     Route::post('buat-janji', [PasienController::class, 'buatJanjiTemu']);
     Route::get('list-janji-temu', [PasienController::class, 'getListJanjiTemu']);
+    Route::get('list-detail-kunjungan/{id_keluhan}', [PasienController::class, 'getListDetailKunjungan']);
+    Route::post('change-status', [PasienController::class, 'changeStatus']);
 });
