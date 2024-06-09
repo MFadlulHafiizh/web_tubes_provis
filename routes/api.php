@@ -45,4 +45,5 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::get('list-janji-temu', [PasienController::class, 'getListJanjiTemu']);
     Route::get('list-detail-kunjungan/{id_keluhan}', [PasienController::class, 'getListDetailKunjungan']);
     Route::post('change-status', [PasienController::class, 'changeStatus']);
+    Route::post('penunjang/upload', [DokterController::class, 'uploadPenunjangMedis']);
 });

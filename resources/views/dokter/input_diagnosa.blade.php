@@ -218,12 +218,17 @@
                                             <td>{{$loop->iteration}}</td>
                                             <td>{{$item->masterPenunjangMedis->jenis_penunjang_medis}}</td>
                                             <td>
-                                                <form action="{{route('dokter.penunjang-medis.delete')}}" method="post">
-                                                    @method('DELETE')
-                                                    @csrf
-                                                    <input type="hidden" name="penunjang_id" value="{{$item->id}}">
-                                                    <button type="submit" class="btn btn-sm btn-danger">-</button>
-                                                </form>
+                                                <div class="d-flex">
+                                                    <form action="{{route('dokter.penunjang-medis.delete')}}" method="post">
+                                                        @method('DELETE')
+                                                        @csrf
+                                                        <input type="hidden" name="penunjang_id" value="{{$item->id}}">
+                                                        <button type="submit" class="btn btn-sm btn-danger">-</button>
+                                                    </form>
+                                                    @if ($item->hasil_penunjang != null)
+                                                    <a href="{{Storage::url($item->hasil_penunjang)}}" target="_blank" class="btn btn-sm btn-warning ms-2">Lihat Lampiran</a>
+                                                    @endif
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach

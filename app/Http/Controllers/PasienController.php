@@ -6,12 +6,16 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Pasien;
 use App\Models\Keluhan;
+use App\Models\ResepObat;
 use App\Models\JadwalDokter;
 use Illuminate\Http\Request;
 use App\Models\DetailKunjungan;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Models\Masterdata\Obat;
 
+use App\Models\Masterdata\Dokter;
+use Illuminate\Support\Facades\DB;
+use App\Models\RujukanPenunjangMedis;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\DokterController;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -220,14 +224,20 @@ class PasienController extends Controller
             ->join('detail_kunjungan', 'detail_kunjungan.keluhan_id', 'keluhan.id')
             ->whereIn('pasien_id', $allPasienFromUser->toArray())
             ->with(['pasien', 'dokter.bidang'])
-            ->groupBy('keluhan.id')
-            ->get();
+            ->groupBy('keluhan.id');
+            $janjiTemu = $janjiTemu->get();
+            if($request->is_riwayat == 'true'){
+                $janjiTemu =  $janjiTemu->whereIn('status', ['selesai', 'kadaluarsa']);
+            }else{
+                $janjiTemu = $janjiTemu->whereNotIn('status', ['selesai', 'kadaluarsa']);
+            }
 
             foreach ($janjiTemu as $key => $value) {
                 $value->jadwal = JadwalDokter::where('dokter_id', $value->dokter_id)
                 ->where('hari', $value->hari)
                 ->whereTime('jam_berakhir', ">=", $value->jam)->with('ruangan')->first();
             }
+            $janjiTemu = array_values($janjiTemu->toArray());
             return $this->sendResponse($janjiTemu, 'Data berhasil diambil');
         }
         catch(\Throwable $th){
@@ -238,7 +248,14 @@ class PasienController extends Controller
 
     public function getListDetailKunjungan($id_keluhan){
         try{
-            $data = DetailKunjungan::where('keluhan_id', $id_keluhan)->get();
+            $data = DetailKunjungan::
+            where('keluhan_id', $id_keluhan)
+            ->with(['resepObat.masterObat', 'rujukanPenunjangMedis.masterPenunjangMedis', 'keluhan' => function ($q){
+                $q->join('dokter', 'dokter.id', 'keluhan.dokter_id')
+                ->join('bidang_dokter', 'bidang_dokter.id', 'dokter.bidang_id')
+                ->select('keluhan.id','keluhan.tanggal', 'keluhan.dokter_id','bidang_dokter.tarif_konsultasi');
+            }])->orderBy('tanggal','desc')
+            ->get();
             return $this->sendResponse($data, 'Data berhasil diambil');
         }catch(\Throwable $th){
             return $this->sendError($th->getMessage(), [], 500);
@@ -317,14 +334,50 @@ class PasienController extends Controller
             }
             return $this->sendError('Validation Error.', $messages);
         }
-
         DB::beginTransaction();
         try{
             $data = DetailKunjungan::find($request->id_kunjungan);
-            $data->status = $request->status;
-            $data->update();
             $keluhan = Keluhan::find($data->keluhan_id);
+            $data->status = $request->status;
+            if($request->status == "belum_bayar"){
+                $totalResep = ResepObat::selectRaw("
+                    SUM(coalesce(masterdata_obat.harga,0) * coalesce(resep_obat.jumlah,0)) as total
+                ")
+                ->join('masterdata_obat', 'masterdata_obat.id', 'resep_obat.obat_id')
+                ->where('detail_kunjungan_id',$data->id)->first();
+                $totalPenunjang = RujukanPenunjangMedis::selectRaw("
+                    COALESCE(SUM(masterdata_penunjang_medis.harga),0) as total
+                ")
+                ->join('masterdata_penunjang_medis', 'masterdata_penunjang_medis.id', 'rujukan_penunjang.penunjang_id')
+                ->where('detail_kunjungan_id',$data->id)->first();
+
+                $tarif = Dokter::select('bidang_dokter.tarif_konsultasi')->join('bidang_dokter', 'bidang_dokter.id', 'dokter.bidang_id')->where('dokter.id', $keluhan->dokter_id)->first();
+                $data->total_harga = $totalResep->total + $totalPenunjang->total + $tarif->tarif_konsultasi;
+            }
+            if($request->status == "selesai"){
+                $data->tanggal_bayar = Carbon::now();
+
+                $setEnableAnotherKunjungan = DetailKunjungan::where('keluhan_id', $data->keluhan_id)->orderBy('tanggal','asc')->get();
+                $setNextTrue = false;
+                foreach ($setEnableAnotherKunjungan as $key => $kj) {
+                    if($kj->is_enable){
+                        $kj->is_enable = false;
+                        $kj->save();
+                        $setNextTrue = true;
+                    }
+                    elseif($setNextTrue){
+                        $kj->is_enable = true;
+                        $kj->save();
+                        $setNextTrue = false;
+                    }
+                }
+
+            }
+            $data->update();
+            
+
             $keluhan->status = $request->status;
+            
             $keluhan->update();
             DB::commit();
             if($request->is_from_page){
@@ -351,7 +404,7 @@ class PasienController extends Controller
             if($request->is_from_page){
                 return redirect()->back()->with('error', $e->getMessage());
             }
-            return $this->sendError($th->getMessage(), [], 500);
+            return $this->sendError($e->getMessage(), [], 500);
         }
     }
 }

@@ -212,4 +212,24 @@ class DokterController extends Controller
         }
         return redirect()->back()->with('error', 'Resep obat gagal dihapus');
     }
+
+    public function uploadPenunjangMedis(Request $request){
+        DB::beginTransaction();
+        try{
+            if($request->hasFile('lampiran')){
+                foreach ($request->file('lampiran') as $key => $file) {
+                    $originalName = $file->getClientOriginalName();
+                    $filename = $request->rujukan_id[$key] . '_' .date('dmYhis') . $originalName;
+                    $file->storeAs('detail_kunjungan/lamp_penunjang/', $filename, "public");
+                    $lampiran = 'detail_kunjungan/lamp_penunjang/'.$filename;
+                    RujukanPenunjangMedis::where('id', $request->rujukan_id[$key])->update(['hasil_penunjang' => $lampiran]);
+                }
+            }
+            DB::commit();
+            return $this->sendResponse([], 'Berhasil upload penunjang medis');
+        }catch(\Throwable $th){
+            DB::rollback();
+            return $this->sendError($th->getMessage(), [], 500);
+        }
+    }
 }

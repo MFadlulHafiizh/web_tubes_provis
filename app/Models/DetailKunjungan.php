@@ -24,4 +24,14 @@ class DetailKunjungan extends Model
 
         return $result;
     }
+
+    public function keluhan(){
+        return $this->belongsTo(Keluhan::class, 'keluhan_id');
+    }
+    public function resepObat(){
+        return $this->hasMany(ResepObat::class, 'detail_kunjungan_id');
+    }
+    public function rujukanPenunjangMedis(){
+        return $this->hasMany(RujukanPenunjangMedis::class, 'detail_kunjungan_id');
+    }
 }
