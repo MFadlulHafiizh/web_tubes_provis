@@ -242,7 +242,7 @@ class PasienController extends Controller
         }
         catch(\Throwable $th){
             DB::rollback();
-            return $this->sendError($th->getMessage(), [], 500);
+            return $this->sendError($th->getMessage(), [$th->getTrace()], 500);
         }
     }
 
@@ -359,16 +359,18 @@ class PasienController extends Controller
 
                 $setEnableAnotherKunjungan = DetailKunjungan::where('keluhan_id', $data->keluhan_id)->orderBy('tanggal','asc')->get();
                 $setNextTrue = false;
-                foreach ($setEnableAnotherKunjungan as $key => $kj) {
-                    if($kj->is_enable){
-                        $kj->is_enable = false;
-                        $kj->save();
-                        $setNextTrue = true;
-                    }
-                    elseif($setNextTrue){
-                        $kj->is_enable = true;
-                        $kj->save();
-                        $setNextTrue = false;
+                if(count($setEnableAnotherKunjungan) != 1){
+                    foreach ($setEnableAnotherKunjungan as $key => $kj) {
+                        if($kj->is_enable){
+                            $kj->is_enable = false;
+                            $kj->save();
+                            $setNextTrue = true;
+                        }
+                        elseif($setNextTrue){
+                            $kj->is_enable = true;
+                            $kj->save();
+                            $setNextTrue = false;
+                        }
                     }
                 }
 
